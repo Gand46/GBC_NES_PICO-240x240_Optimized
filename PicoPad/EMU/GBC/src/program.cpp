@@ -1,35 +1,35 @@
 #include "../include.h"
 
-char ProgName[] = "KEYDEMO";
-int ProgNameLen = 7;
-char ProgExt[] = "GB";
-int ProgExtLen = 2;
-int gameRomLen = 10152;
-int gameRomOrig = 32768;
-int gameRomPages = 2;
-int gameFlashPages = 2;
+const char ProgName[] FLASHDATA = "KEYDEMO";
+const int ProgNameLen = 7;
+const char ProgExt[] FLASHDATA = "GB";
+const int ProgExtLen = 2;
+const int gameRomLen = 10152;
+const int gameRomOrig = 32768;
+const int gameRomPages = 2;
+const int gameFlashPages = 2;
 
-u16 gameRomSizeList[2] = {
+const u16 gameRomSizeList[2] FLASHDATA = {
 	10152,	// page 0
 	0,	// page 1
 };
 
-u32 gameRomOffList[2] = {
+const u32 gameRomOffList[2] FLASHDATA = {
 	0,	// page 0
 	10152,	// page 1
 };
 
-u8 gameRomStuffList[2] = {
+const u8 gameRomStuffList[2] FLASHDATA = {
 	0xff,	// page 0
 	0xff,	// page 1
 };
 
-u8 gameRomLastList[2] = {
+const u8 gameRomLastList[2] FLASHDATA = {
 	0xff,	// page 0
 	0xff,	// page 1
 };
 
-const u8 gameRom[10152] = {
+const u8 gameRom[10152] FLASHDATA = {
 	0xc9, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

@@ -47,6 +47,9 @@
 // place time critical function into RAM
 #define NOFLASH(fnc) NOINLINE __attribute__((section(".time_critical." #fnc))) fnc
 
+// place constant data into flash memory
+#define FLASHDATA __attribute__((section(".flashdata")))
+
 // fast function optimization
 #define FASTCODE __attribute__ ((optimize("-Ofast")))
 

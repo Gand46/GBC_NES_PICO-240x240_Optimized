@@ -121,39 +121,39 @@ int main(int argc, char* argv[])
 	fprintf(f, "#include \"../include.h\"\n\n");
 
 	// print total size and number of pages
-	fprintf(f, "char ProgName[] = \"%s\";\n", argv[3]);
-	fprintf(f, "int ProgNameLen = %d;\n", strlen(argv[3]));
-	fprintf(f, "char ProgExt[] = \"%s\";\n", argv[4]);
-	fprintf(f, "int ProgExtLen = %d;\n", strlen(argv[4]));
-	fprintf(f, "int gameRomLen = %d;\n", realsize);
-	fprintf(f, "int gameRomOrig = %d;\n", size);
-	fprintf(f, "int gameRomPages = %d;\n", pagenum);
-	fprintf(f, "int gameFlashPages = %d;\n\n", pageflash);
+        fprintf(f, "const char ProgName[] FLASHDATA = \"%s\";\n", argv[3]);
+        fprintf(f, "const int ProgNameLen = %d;\n", strlen(argv[3]));
+        fprintf(f, "const char ProgExt[] FLASHDATA = \"%s\";\n", argv[4]);
+        fprintf(f, "const int ProgExtLen = %d;\n", strlen(argv[4]));
+        fprintf(f, "const int gameRomLen = %d;\n", realsize);
+        fprintf(f, "const int gameRomOrig = %d;\n", size);
+        fprintf(f, "const int gameRomPages = %d;\n", pagenum);
+        fprintf(f, "const int gameFlashPages = %d;\n\n", pageflash);
 
 	if (pageflash < pagenum) printf("WARNING: Emulator requires ROM file!\n");
 
 	// print size table
-	fprintf(f, "u16 gameRomSizeList[%d] = {\n", pageflash);
+        fprintf(f, "const u16 gameRomSizeList[%d] FLASHDATA = {\n", pageflash);
 	for (page = 0; page < pageflash; page++) fprintf(f, "\t%d,\t// page %d\n", pagesize[page], page);
 	fprintf(f, "};\n\n");
 
 	// print offsets table
-	fprintf(f, "u32 gameRomOffList[%d] = {\n", pageflash);
+        fprintf(f, "const u32 gameRomOffList[%d] FLASHDATA = {\n", pageflash);
 	for (page = 0; page < pageflash; page++) fprintf(f, "\t%d,\t// page %d\n", pageoff[page], page);
 	fprintf(f, "};\n\n");
 
 	// print stuff table
-	fprintf(f, "u8 gameRomStuffList[%d] = {\n", pageflash);
+        fprintf(f, "const u8 gameRomStuffList[%d] FLASHDATA = {\n", pageflash);
 	for (page = 0; page < pageflash; page++) fprintf(f, "\t0x%02x,\t// page %d\n", pagestuff[page], page);
 	fprintf(f, "};\n\n");
 
 	// print last table
-	fprintf(f, "u8 gameRomLastList[%d] = {\n", pageflash);
+        fprintf(f, "const u8 gameRomLastList[%d] FLASHDATA = {\n", pageflash);
 	for (page = 0; page < pageflash; page++) fprintf(f, "\t0x%02x,\t// page %d\n", pagelast[page], page);
 	fprintf(f, "};\n\n");
 
 	// print Rom head
-	fprintf(f, "const u8 gameRom[%u] = {\n", realsize);
+        fprintf(f, "const u8 gameRom[%u] FLASHDATA = {\n", realsize);
 
 	// export file
 	int pos = 0;

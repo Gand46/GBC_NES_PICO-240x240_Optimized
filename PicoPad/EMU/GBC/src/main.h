@@ -79,18 +79,18 @@ void GB_Setup();
 void gbSetPal(u8 info);
 
 // program
-extern char ProgName[];		// program name (max. 8 characters upper case)
-extern int ProgNameLen;		// length of program name (1 to 8 characters)
-extern char ProgExt[];		// program name extension (max. 3 characters upper case)
-extern int ProgExtLen;		// length of program name extension (1 to 3 characters)
-extern int gameRomLen;		// length of compressed ROM image
-extern int gameRomOrig;		// original length of ROM image (without compression)
-extern int gameRomPages;	// number of ROM pages
-extern int gameFlashPages;	// number of Flash pages (ROM in flash)
-extern u16 gameRomSizeList[];	// list of sizes of valid data of ROM pages
-extern u32 gameRomOffList[];	// list of offsets of ROM pages
-extern u8 gameRomStuffList[];	// list of stuff byte of rest of ROM pages
-extern u8 gameRomLastList[];	// list of last byte of of ROM pages
+extern const char ProgName[];		// program name (max. 8 characters upper case)
+extern const int ProgNameLen;		// length of program name (1 to 8 characters)
+extern const char ProgExt[];		// program name extension (max. 3 characters upper case)
+extern const int ProgExtLen;		// length of program name extension (1 to 3 characters)
+extern const int gameRomLen;		// length of compressed ROM image
+extern const int gameRomOrig;		// original length of ROM image (without compression)
+extern const int gameRomPages;	// number of ROM pages
+extern const int gameFlashPages;	// number of Flash pages (ROM in flash)
+extern const u16 gameRomSizeList[];	// list of sizes of valid data of ROM pages
+extern const u32 gameRomOffList[];	// list of offsets of ROM pages
+extern const u8 gameRomStuffList[];	// list of stuff byte of rest of ROM pages
+extern const u8 gameRomLastList[];	// list of last byte of of ROM pages
 extern const u8 gameRom[];	// ROM image (compressed)
 
 #endif // _MAIN_H

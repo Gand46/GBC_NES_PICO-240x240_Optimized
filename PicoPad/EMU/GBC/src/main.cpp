@@ -722,30 +722,73 @@ void gbSelectColorizationPalette()
 // Error handler function
 void gbErrorHandler(struct gb_s *gb, const enum gb_error_e gb_err, const u16 addr) { reset_usb_boot(0, 0); }
 
-// fast integer division helpers (replace expensive divisions)
-#define DIV3(x) ((u32)(((u64)(x) * 0xAAAAAAABULL) >> 33))
-#define DIV5(x) ((u32)(((u64)(x) * 0xCCCCCCCDULL) >> 34))
+// Specialized interpolation helpers using only 32-bit math. The input
+// colors are in 5-6-5 format; intermediate sums stay below 16 bits, so
+// divisions by 3 and 5 can be replaced with cheap multiply+shift pairs
+// ((x*171)>>9 and (x*205)>>10 respectively).
 
 static inline u16 interp3(u16 a, u16 b, int f)
 {
-    if (f == 0) return a;
-    if (f == 2) return b;
-    u32 rb = (a & 0xF81F)* (3 - f) + (b & 0xF81F) * f;
-    u32 g  = (a & 0x07E0)* (3 - f) + (b & 0x07E0) * f;
-    rb = DIV3(rb);
-    g  = DIV3(g);
-    return (u16)((rb & 0xF81F) | (g & 0x07E0));
+    if (f == 0) return a;                 // weight 1.0 of a
+    if (f == 2) return b;                 // weight 1.0 of b
+
+    // f == 1 -> (2*a + b)/3
+    u32 ar = (a >> 11) & 0x1F;
+    u32 ag = (a >> 5)  & 0x3F;
+    u32 ab =  a        & 0x1F;
+    u32 br = (b >> 11) & 0x1F;
+    u32 bg = (b >> 5)  & 0x3F;
+    u32 bb =  b        & 0x1F;
+
+    u32 rr = ((ar << 1) + br) * 171 >> 9; // divide by 3
+    u32 gg = ((ag << 1) + bg) * 171 >> 9;
+    u32 bbv = ((ab << 1) + bb) * 171 >> 9;
+
+    return (u16)((rr << 11) | (gg << 5) | bbv);
 }
 
 static inline u16 interp5(u16 a, u16 b, int f)
 {
-    if (f == 0) return a;
-    if (f == 4) return b;
-    u32 rb = (a & 0xF81F) * (5 - f) + (b & 0xF81F) * f;
-    u32 g  = (a & 0x07E0) * (5 - f) + (b & 0x07E0) * f;
-    rb = DIV5(rb);
-    g  = DIV5(g);
-    return (u16)((rb & 0xF81F) | (g & 0x07E0));
+    if (f == 0) return a;                 // weight 1.0 of a
+    if (f == 4) return b;                 // weight 1.0 of b
+
+    u32 ar = (a >> 11) & 0x1F;
+    u32 ag = (a >> 5)  & 0x3F;
+    u32 ab =  a        & 0x1F;
+    u32 br = (b >> 11) & 0x1F;
+    u32 bg = (b >> 5)  & 0x3F;
+    u32 bb =  b        & 0x1F;
+
+    u32 rr, gg, bbv;
+    switch (f)
+    {
+    case 1: // (4*a + b)/5
+        rr = (ar << 2) + br;
+        gg = (ag << 2) + bg;
+        bbv = (ab << 2) + bb;
+        break;
+    case 2: // (3*a + 2*b)/5
+        rr = (ar << 1) + ar + (br << 1);
+        gg = (ag << 1) + ag + (bg << 1);
+        bbv = (ab << 1) + ab + (bb << 1);
+        break;
+    case 3: // (2*a + 3*b)/5
+        rr = (ar << 1) + (br << 1) + br;
+        gg = (ag << 1) + (bg << 1) + bg;
+        bbv = (ab << 1) + (bb << 1) + bb;
+        break;
+    default: // f == 4 already handled, but keep safe path
+        rr = ar + (br << 2);              // (a + 4*b)/5
+        gg = ag + (bg << 2);
+        bbv = ab + (bb << 2);
+        break;
+    }
+
+    rr = (rr * 205) >> 10;               // divide by 5
+    gg = (gg * 205) >> 10;
+    bbv = (bbv * 205) >> 10;
+
+    return (u16)((rr << 11) | (gg << 5) | bbv);
 }
 
 // draw one line from frame buffer

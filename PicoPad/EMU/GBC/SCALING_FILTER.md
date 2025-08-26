@@ -12,5 +12,6 @@ using bilinear interpolation with lookup tables:
 
 Fractions (0–2 for X, 0–4 for Y) are packed together with source indices
 in `lut_x` and `lut_y`. During rendering the precomputed weights are
-combined using integer arithmetic (adds, multiplies and shifts) to
-minimize CPU load on the RP2040.
+combined using integer arithmetic that replaces slow divisions with
+`(x*171)>>9` and `(x*205)>>10` sequences, keeping the RP2040 free from
+64‑bit operations.

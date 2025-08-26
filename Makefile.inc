@@ -293,7 +293,15 @@ CFLAGS = $(ARCHCFG)
 #CFLAGS += -O3	# optimize even more
 #CFLAGS += -Ofast # optimize for speed
 #CFLAGS += -Og -g3 # optimize for debugger (use together with -g0..-g3, level of debugging information)
+
+# Enable link-time optimization for applications, but keep boot loader builds
+# minimal to preserve expected binary layout checked by LoaderBin.
+ifeq ($(TARGET),LOADER)
+CFLAGS += -O2
+else
 CFLAGS += -O2 -flto   # optimize for speed with link-time optimization
+LDFLAGS += -flto
+endif
 
 # Do not use built-in functions. This is case when compiller changes printf("x") to putchar('x').
 #CFLAGS += -fno-builtin

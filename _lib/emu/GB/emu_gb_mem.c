@@ -662,15 +662,15 @@ void FASTCODE NOFLASH(GB_SetMem)(u16 addr, u8 data)
 //#if USE_EMU_GB == 2			// 1=use Game Boy emulator, 2=use Game Boy Color emulator
 //			data = data % 0xf1;
 //#endif
-			u16 addr = (u16)data << 8; // source address 0x0000-0xFF00, increments 0x100
-			int i;
-			for (i = 0; i < GB_OAM_SIZE; i++)
-			{
-				GBC->oam[i] = GBC->cpu.readmem(addr);
-				addr++;
-			}
-		}
-		break;
+                        u16 addr = (u16)data
+                                   << 8; // source address 0x0000-0xFF00,
+                                         // increments 0x100
+                        u8 *dst = GBC->oam;
+                        for (int i = GB_OAM_SIZE; i > 0; i--) {
+                          *dst++ = GBC->cpu.readmem(addr++);
+                        }
+               }
+               break;
 
 	// 0x47: BG palette
 	case GB_IO_BGP:

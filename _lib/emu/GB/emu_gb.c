@@ -83,31 +83,28 @@ void GB_KeyFlush()
 }
 
 // get key KEY_X, KEY_Y, KEY_A or KEY_B (return NOKEY if no key)
-u8 GB_KeyGet()
-{
-	if (GB_KeyX)
-	{
-		GB_KeyX = False;
-		return KEY_X;
-	}
-	
-	if (GB_KeyY)
-	{
-		GB_KeyY = False;
-		return KEY_Y;
-	}
+u8 GB_KeyGet() {
+  if (GB_KeyX) {
+    GB_KeyX = False;
+    return KEY_X;
+  }
 
-	if (GB_KeyA)
-	{
-		GB_KeyA = False;
-		return KEY_A;
-	}
+  if (GB_KeyY) {
+    GB_KeyY = False;
+    return KEY_Y;
+  }
 
-	if (GB_KeyB)
-	{
-		GB_KeyB = False;
-		return KEY_B;
-	}
+  if (GB_KeyA) {
+    GB_KeyA = False;
+    return KEY_A;
+  }
+
+  if (GB_KeyB) {
+    GB_KeyB = False;
+    return KEY_B;
+  }
+
+  return NOKEY;
 }
 
 // key handler (called from systick alarm every 50 ms)

@@ -85,71 +85,88 @@ void GB_KeyFlush()
 // get key KEY_X, KEY_Y, KEY_A or KEY_B (return NOKEY if no key)
 u8 GB_KeyGet()
 {
-	if (GB_KeyX)
-	{
-		GB_KeyX = False;
-		return KEY_X;
-	}
-	
-	if (GB_KeyY)
-	{
-		GB_KeyY = False;
-		return KEY_Y;
-	}
+        if (GB_KeyX)
+        {
+                GB_KeyX = False;
+                return KEY_X;
+        }
+        else if (GB_KeyY)
+        {
+                GB_KeyY = False;
+                return KEY_Y;
+        }
+        else if (GB_KeyA)
+        {
+                GB_KeyA = False;
+                return KEY_A;
+        }
+        else if (GB_KeyB)
+        {
+                GB_KeyB = False;
+                return KEY_B;
+        }
 
-	if (GB_KeyA)
-	{
-		GB_KeyA = False;
-		return KEY_A;
-	}
-
-	if (GB_KeyB)
-	{
-		GB_KeyB = False;
-		return KEY_B;
-	}
+        return NOKEY;
 }
 
 // key handler (called from systick alarm every 50 ms)
 void GB_KeyHandler(sAlarm* alarm)
 {
-	// get key
-	u8 key = KeyGet();
-	if (key != NOKEY)
-	{
-		if (key == KEY_X) GB_KeyX = True;
+        // cache key states to avoid redundant queries
+        Bool right = KeyPressed(KEY_RIGHT);
+        Bool left  = KeyPressed(KEY_LEFT);
+        Bool up    = KeyPressed(KEY_UP);
+        Bool down  = KeyPressed(KEY_DOWN);
+        Bool a     = KeyPressed(KEY_A);
+        Bool b     = KeyPressed(KEY_B);
+        Bool y     = KeyPressed(KEY_Y);
+        Bool x     = KeyPressed(KEY_X);
 
-		if (key == KEY_Y)
-		{
-			GB_KeyY = True;
-			if (KeyPressed(KEY_UP)) GB_KeyMenuReq = True; // requirement for game menu (keys Y + UP)
-		}
+        // resolve opposite directions to prevent undefined states
+        if (right && left)
+        {
+                right = False;
+                left = False;
+        }
+        if (up && down)
+        {
+                up = False;
+                down = False;
+        }
 
-		if (key == KEY_A) GB_KeyA = True;
+        // get key
+        u8 key = KeyGet();
+        if (key != NOKEY)
+        {
+                if (key == KEY_X) GB_KeyX = True;
+                else if (key == KEY_Y)
+                {
+                        GB_KeyY = True;
+                        if (up) GB_KeyMenuReq = True; // requirement for game menu (keys Y + UP)
+                }
+                else if (key == KEY_A) GB_KeyA = True;
+                else if (key == KEY_B) GB_KeyB = True;
+                else if (key == KEY_UP)
+                {
+                        if (y) GB_KeyMenuReq = True; // requirement for game menu (keys Y + UP)
+                }
+        }
 
-		if (key == KEY_B) GB_KeyB = True;
+        // pressed keys on port 14
+        key = 0xff;
+        if (right) key &= ~GB_KEY14_RIGHT;
+        if (left)  key &= ~GB_KEY14_LEFT;
+        if (up)    key &= ~GB_KEY14_UP;
+        if (down)  key &= ~GB_KEY14_DOWN;
+        GB_Key14 = key;
 
-		if (key == KEY_UP)
-		{
-			if (KeyPressed(KEY_Y)) GB_KeyMenuReq = True; // requirement for game menu (keys Y + UP)
-		}
-	}
-
-	// pressed keys on port 14
-	key = 0xff;
-	if (KeyPressed(KEY_RIGHT))	key &= ~GB_KEY14_RIGHT;
-	if (KeyPressed(KEY_LEFT))	key &= ~GB_KEY14_LEFT;
-	if (KeyPressed(KEY_UP))		key &= ~GB_KEY14_UP;
-	if (KeyPressed(KEY_DOWN))	key &= ~GB_KEY14_DOWN;
-	GB_Key14 = key;
-
-	// pressed keys on port 15
-	key = 0xff;
-	if (KeyPressed(KEY_A))		key &= ~GB_KEY15_A;
-	if (KeyPressed(KEY_B))		key &= ~GB_KEY15_B;
-	if (KeyPressed(KEY_Y))		key &= ~GB_KEY15_SELECT;
-	if (KeyPressed(KEY_X))		key &= ~GB_KEY15_START;
-	GB_Key15 = key;
+        // pressed keys on port 15
+        key = 0xff;
+        if (a) key &= ~GB_KEY15_A;
+        if (b) key &= ~GB_KEY15_B;
+        if (y) key &= ~GB_KEY15_SELECT;
+        if (x) key &= ~GB_KEY15_START;
+        GB_Key15 = key;
 }
 
 // execute STOP instruction (return True = continue, False = repeat STOP instruction)

@@ -107,6 +107,18 @@ else
 DEFINE += -D USE_DOUBLELIBC=0
 endif
 
+# Optional emulator performance flags
+GB_USE_INTRINSICS=0
+GB_HIGH_LCD_ACCURACY=0
+
+ifeq (${GB_USE_INTRINSICS},1)
+DEFINE += -D GB_USE_INTRINSICS=1
+endif
+
+ifeq (${GB_HIGH_LCD_ACCURACY},1)
+DEFINE += -D GB_HIGH_LCD_ACCURACY=1
+endif
+
 ##############################################################################
 # Input files
 
@@ -293,7 +305,7 @@ CFLAGS = $(ARCHCFG)
 #CFLAGS += -O3	# optimize even more
 #CFLAGS += -Ofast # optimize for speed
 #CFLAGS += -Og -g3 # optimize for debugger (use together with -g0..-g3, level of debugging information)
-CFLAGS += -Os	# optimize for size
+CFLAGS += -O2 -flto   # optimize for speed with link-time optimization
 
 # Do not use built-in functions. This is case when compiller changes printf("x") to putchar('x').
 #CFLAGS += -fno-builtin

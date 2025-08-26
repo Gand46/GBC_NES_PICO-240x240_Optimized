@@ -89,7 +89,7 @@ does not support compressed instructions, resulting code is a litle bigger. If
 you will use GCC version 14.2, you will need to build it yourself, but you can
 also use compressed RISC-V instructions, the resulting code will be smaller. In
 such case, edit Makefile.inc in base directory of PicoLibSDK, and change
-compilation switch to GCC 14 (search ìCPU Architectureî). You can install both
+compilation switch to GCC 14 (search ‚ÄúCPU Architecture‚Äù). You can install both
 compilers in the same directory, e.g. C:\ARM.
 
 In the last stage of the installation, enable the "Add path to environment
@@ -339,6 +339,12 @@ contain the included header files for the device. For example:
 #if USE_PICOINO // use Picoino device configuration
 #include "_devices/picoino/_include.h"
 #endif
+
+
+Advanced builds can toggle additional emulator optimizations in `Makefile.inc`:
+
+    DEFINE += -D GB_USE_INTRINSICS=1      # use SIMD intrinsics where available
+    DEFINE += -D GB_HIGH_LCD_ACCURACY=1   # favor LCD precision over speed
 
 
 Conventions

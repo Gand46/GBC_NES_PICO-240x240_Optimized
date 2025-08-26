@@ -6,6 +6,8 @@
 // ****************************************************************************
 
 #include "../include.h"
+#include "../../../../_sdk/inc/sdk_interp.h"
+#include "../../../../_sdk/inc/sdk_dma.h"
 
 #define EMU_PWMTOP	4095	// PWM sound top (period = EMU_PWMTOP + 1 = 4096)
 #define EMU_PWMCLOCK	(AUDIO_SAMPLE_RATE*(EMU_PWMTOP+1)) // PWM clock (= 32768*4096 = 134 217 728)
@@ -59,14 +61,14 @@ int DebFps;			// last FPS
 u16 DebFpsCol;			// FPS color
 #endif
 
-// sound
-s16 StreamBuf[AUDIO_SAMPBUF*2];
-#if PWMSND_GPIO_R >= 0
-u16 SndBuf[AUDIO_SAMPBUF*2];
-#else
-u16 SndBuf[AUDIO_SAMPBUF];
-#endif
-int SndBufInx = AUDIO_SAMPBUF;
+// sound ring buffer serviced by DMA
+#define AUDIO_BLOCK_SAMPLES 256
+#define AUDIO_RING_SAMPLES (AUDIO_BLOCK_SAMPLES*2)
+s16 StreamBuf[AUDIO_BLOCK_SAMPLES*2];
+u32 audio_ring[AUDIO_RING_SAMPLES];
+volatile int dma_block = 0;
+u32 audio_dma_ctrl;
+#define AUDIO_DMA_CH 0
 
 // ----------------------------------------------------------------------------
 //                               ROM and cache
@@ -722,73 +724,40 @@ void gbSelectColorizationPalette()
 // Error handler function
 void gbErrorHandler(struct gb_s *gb, const enum gb_error_e gb_err, const u16 addr) { reset_usb_boot(0, 0); }
 
-// Specialized interpolation helpers using only 32-bit math. The input
-// colors are in 5-6-5 format; intermediate sums stay below 16 bits, so
-// divisions by 3 and 5 can be replaced with cheap multiply+shift pairs
-// ((x*171)>>9 and (x*205)>>10 respectively).
-
-static inline u16 interp3(u16 a, u16 b, int f)
+static inline void init_interp_hw()
 {
-    if (f == 0) return a;                 // weight 1.0 of a
-    if (f == 2) return b;                 // weight 1.0 of b
-
-    // f == 1 -> (2*a + b)/3
-    u32 ar = (a >> 11) & 0x1F;
-    u32 ag = (a >> 5)  & 0x3F;
-    u32 ab =  a        & 0x1F;
-    u32 br = (b >> 11) & 0x1F;
-    u32 bg = (b >> 5)  & 0x3F;
-    u32 bb =  b        & 0x1F;
-
-    u32 rr = ((ar << 1) + br) * 171 >> 9; // divide by 3
-    u32 gg = ((ag << 1) + bg) * 171 >> 9;
-    u32 bbv = ((ab << 1) + bb) * 171 >> 9;
-
-    return (u16)((rr << 11) | (gg << 5) | bbv);
+    InterpReset(0);
+    interp_config cfg = interp_default_config();
+    interp_config_set_blend(&cfg, true);
+    interp_config_set_shift(&cfg, 8);
+    interp_config_set_mask(&cfg, 0, 15);
+    interp_set_config(interp0_hw, 0, &cfg);
+    interp_set_config(interp0_hw, 1, &cfg);
 }
 
-static inline u16 interp5(u16 a, u16 b, int f)
+static inline u16 lerp_hw(u16 a, u16 b, u8 frac)
 {
-    if (f == 0) return a;                 // weight 1.0 of a
-    if (f == 4) return b;                 // weight 1.0 of b
+    interp0_hw->base[0] = a;
+    interp0_hw->base[1] = b;
+    interp0_hw->accum[0] = (u32)frac << 24;
+    return (u16)interp0_hw->pop[0];
+}
 
-    u32 ar = (a >> 11) & 0x1F;
-    u32 ag = (a >> 5)  & 0x3F;
-    u32 ab =  a        & 0x1F;
-    u32 br = (b >> 11) & 0x1F;
-    u32 bg = (b >> 5)  & 0x3F;
-    u32 bb =  b        & 0x1F;
-
-    u32 rr, gg, bbv;
-    switch (f)
+static void scale_line_hw(u16* dst, u16* s0, u16* s1, int fracy)
+{
+    static const u8 fracx_tab[3] = {0, 85, 255};
+    static const u8 fracy_tab[5] = {0, 51, 102, 153, 255};
+    u8 fy = fracy_tab[fracy];
+    for (int x = 0; x < WIDTH; x++)
     {
-    case 1: // (4*a + b)/5
-        rr = (ar << 2) + br;
-        gg = (ag << 2) + bg;
-        bbv = (ab << 2) + bb;
-        break;
-    case 2: // (3*a + 2*b)/5
-        rr = (ar << 1) + ar + (br << 1);
-        gg = (ag << 1) + ag + (bg << 1);
-        bbv = (ab << 1) + ab + (bb << 1);
-        break;
-    case 3: // (2*a + 3*b)/5
-        rr = (ar << 1) + (br << 1) + br;
-        gg = (ag << 1) + (bg << 1) + bg;
-        bbv = (ab << 1) + (bb << 1) + bb;
-        break;
-    default: // f == 4 already handled, but keep safe path
-        rr = ar + (br << 2);              // (a + 4*b)/5
-        gg = ag + (bg << 2);
-        bbv = ab + (bb << 2);
-        break;
+        int fracx = lut_x[x];
+        int xs = fracx >> 2;
+        fracx &= 3;
+        u8 fx = fracx_tab[fracx];
+        u16 c0 = lerp_hw(s0[xs], (xs < LCD_WIDTH-1) ? s0[xs+1] : s0[xs], fx);
+        u16 c1 = lerp_hw(s1[xs], (xs < LCD_WIDTH-1) ? s1[xs+1] : s1[xs], fx);
+        dst[x] = lerp_hw(c0, c1, fy);
     }
-
-    rr = (rr * 205) >> 10;               // divide by 5
-    gg = (gg * 205) >> 10;
-    bbv = (bbv * 205) >> 10;
-
-    return (u16)((rr << 11) | (gg << 5) | bbv);
 }
 
 // draw one line from frame buffer
@@ -796,7 +765,9 @@ void FASTCODE NOFLASH(core1DrawFrame)()
 {
        int x, y, ys, ys2, rinx, rinx2, fracx, fracy;
        u16 *s0, *s1;
-       u16 linebuf[WIDTH];
+        u16 linebuf[WIDTH];
+
+        init_interp_hw();
 
 #if DEB_FPS                     // debug display FPS
         u16 buf[16*16];
@@ -865,37 +836,15 @@ void FASTCODE NOFLASH(core1DrawFrame)()
                DispStartImg(0, WIDTH, y, y+1);
 
 #if DEB_FPS                     // debug display FPS
-              if (y < 16)
-              {
-                      u16* s2 = &buf[16*y];
-                      for (x = 0; x < WIDTH; x++)
-                      {
-                              if (x < 16)
-                                      linebuf[x] = s2[x];
-                              else
-                              {
-                                      fracx = lut_x[x];
-                                      int xs = fracx >> 2;
-                                      fracx &= 3;
-                                      u16 c0 = interp3(s0[xs], (xs < LCD_WIDTH-1) ? s0[xs+1] : s0[xs], fracx);
-                                      u16 c1 = interp3(s1[xs], (xs < LCD_WIDTH-1) ? s1[xs+1] : s1[xs], fracx);
-                                      linebuf[x] = interp5(c0, c1, fracy);
-                              }
-                      }
-              }
-              else
+               scale_line_hw(linebuf, s0, s1, fracy);
+               if (y < 16)
+               {
+                       u16* s2 = &buf[16*y];
+                       memcpy(linebuf, s2, 16*sizeof(u16));
+               }
+#else
+               scale_line_hw(linebuf, s0, s1, fracy);
 #endif
-              {
-                      for (x = 0; x < WIDTH; x++)
-                      {
-                              fracx = lut_x[x];
-                              int xs = fracx >> 2;
-                              fracx &= 3;
-                              u16 c0 = interp3(s0[xs], (xs < LCD_WIDTH-1) ? s0[xs+1] : s0[xs], fracx);
-                              u16 c1 = interp3(s1[xs], (xs < LCD_WIDTH-1) ? s1[xs+1] : s1[xs], fracx);
-                              linebuf[x] = interp5(c0, c1, fracy);
-                      }
-              }
 
                DispWriteDataDMA(linebuf, WIDTH*2);
                while (SPI_IsBusy(DISP_SPI)) SPI_RxFlush(DISP_SPI);
@@ -919,104 +868,54 @@ void FASTCODE NOFLASH(core1DrawFrame)()
                 if (rinx >= HEIGHT) rinx = 0;
                 gbContext.frame_rline = rinx;
 
-                // slow down FPS to speed up emulation
-                u32 del = DelayLineUs;
-                u32 line = LastLineUs;
-                while ((u32)(Time() - line) < del) {}
-                LastLineUs = Time();
+                // slow down FPS to speed up emulation without busy-waiting
+                absolute_time_t deadline = delayed_by_us(from_us_since_boot(LastLineUs), DelayLineUs);
+                sleep_until(deadline);
+                LastLineUs = (u32)to_us_since_boot(deadline);
         }
 }
 
-// PWM audio interrupt handler
+static void audio_fill_block(int block)
+{
+        int vol = Config.volume;
+        u32* d = &audio_ring[block*AUDIO_BLOCK_SAMPLES];
+
+        if ((vol == 0) || GlobalSoundOff)
+        {
+                u32 silence = (EMU_PWMTOP/2) | ((u32)(EMU_PWMTOP/2) << 16);
+                for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) d[i] = silence;
+                return;
+        }
+
+        audio_callback(StreamBuf, AUDIO_BLOCK_SAMPLES);
+        s16* s = StreamBuf;
+        for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++)
+        {
+                int left = *s++;
+                int right = *s++;
+                left = (left*vol) >> 10; right = (right*vol) >> 10;
+                left += EMU_PWMTOP/2; right += EMU_PWMTOP/2;
+                if (left < 0) left = 0; if (left > EMU_PWMTOP) left = EMU_PWMTOP;
+                if (right < 0) right = 0; if (right > EMU_PWMTOP) right = EMU_PWMTOP;
+#if PWMSND_GPIO_R >= 0
+                d[i] = (u32)left | ((u32)right << 16);
+#else
+                int mono = (left + right) >> 1;
+                d[i] = (u32)mono;
+#endif
+        }
+}
+
+// DMA interrupt handler feeding PWM
 void FASTCODE NOFLASH(PWMSndIrq)()
 {
-	// clear interrupt request
-	PWM_IntClear(PWMSND_SLICE);
-
-	// end of buffer
-	int i = SndBufInx;
-	if (i >= AUDIO_SAMPBUF)
-	{
-		// check mute
-		int vol = Config.volume; // volume 0..255, 100=normal (we will use 128)
-		if ((vol == 0) || GlobalSoundOff)
-		{
-			// mute sound
-#if PWMSND_GPIO_R >= 0
-			for (i = 0; i < AUDIO_SAMPBUF*2; i++) SndBuf[i] = EMU_PWMTOP/2;
-#else
-			for (i = 0; i < AUDIO_SAMPBUF; i++) SndBuf[i] = EMU_PWMTOP/2;
-#endif
-		}
-
-		// prepare next sound buffer
-		else
-		{
-			// render buffer
-			audio_callback(StreamBuf, AUDIO_SAMPBUF);
-
-			// convert sound to mono
-			s16* s = StreamBuf; // input stream
-			u16* d = SndBuf; // output stream
-
-			int leftChannel, rightChannel;
-			int i;
-			for (i = AUDIO_SAMPBUF; i > 0; i--)
-			{
-				leftChannel = *s++;
-				rightChannel = *s++;
-
-#if PWMSND_GPIO_R >= 0
-				leftChannel = (leftChannel*vol) >> 10;
-				leftChannel += EMU_PWMTOP/2;
-				if (leftChannel < 0) leftChannel = 0;
-				if (leftChannel > EMU_PWMTOP) leftChannel = EMU_PWMTOP;
-				*d++ = (u16)leftChannel;
-
-				rightChannel = (rightChannel*vol) >> 10;
-				rightChannel += EMU_PWMTOP/2;
-				if (rightChannel < 0) rightChannel = 0;
-				if (rightChannel > EMU_PWMTOP) rightChannel = EMU_PWMTOP;
-				*d++ = (u16)rightChannel;
-#else // PWMSND_GPIO_R
-				// (left + right)*vol ... max. 24 bit number, normal 23 bit number, we will need 12 bit number
-				int mono = ((leftChannel + rightChannel)*vol) >> 11;
-				mono += EMU_PWMTOP/2;
-
-				// Clip the value to the range of a 16-bit signed integer
-				if (mono < 0) mono = 0;
-				if (mono > EMU_PWMTOP) mono = EMU_PWMTOP;
-				*d++ = (u16)mono;
-#endif // PWMSND_GPIO_R
-			}
-		}
-
-		i = 0;
-	}
-
-#if PWMSND_GPIO_R >= 0
-
-	// get next sample
-	u16 samp = SndBuf[2*i];
-	u16 samp_r = SndBuf[2*i+1];
-	i++;
-	SndBufInx = i;
-
-	// output sample
-	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, samp);
-	PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, samp_r);
-
-#else // PWMSND_GPIO_R
-
-	// get next sample
-	u16 samp = SndBuf[i];
-	i++;
-	SndBufInx = i;
-
-	// output sample
-	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, samp);
-
-#endif // PWMSND_GPIO_R
+        DMA_IRQ0Clear(AUDIO_DMA_CH);
+        audio_fill_block(dma_block);
+        int next = dma_block ^ 1;
+        DMA_Config(AUDIO_DMA_CH, &audio_ring[next*AUDIO_BLOCK_SAMPLES], PWM_CC(PWMSND_SLICE),
+                   AUDIO_BLOCK_SAMPLES, audio_dma_ctrl);
+        DMA_Start(AUDIO_DMA_CH);
+        dma_block = next;
 }
 
 volatile Bool RunEmul = False;
@@ -1188,23 +1087,35 @@ void GB_Setup()
 	// Init audio
 	audio_init(&gbContext);
 
-	// initialize PWM sound output
-	PWM_Reset(PWMSND_SLICE);		// reset PWM to default state
-	PWM_GpioInit(PWMSND_GPIO);		// set GPIO function to PWM
+        // initialize PWM sound output with DMA
+        PWM_Reset(PWMSND_SLICE);
+        PWM_GpioInit(PWMSND_GPIO);
 #if PWMSND_GPIO_R >= 0
-	PWM_GpioInit(PWMSND_GPIO_R);		// set GPIO function to PWM
+        PWM_GpioInit(PWMSND_GPIO_R);
 #endif // PWMSND_GPIO_R
-	SetHandler(IRQ_PWM_WRAP, PWMSndIrq);	// set IRQ handler
-	NVIC_IRQEnable(IRQ_PWM_WRAP);		// enable interrupt on NVIC controller
-	PWM_Clock(PWMSND_SLICE, EMU_PWMCLOCK);	// set clock divider
-	PWM_Top(PWMSND_SLICE, EMU_PWMTOP);	// set period to 256 cycles
-	PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, EMU_PWMTOP/2); // write default PWM sample
+        PWM_Clock(PWMSND_SLICE, EMU_PWMCLOCK);
+        PWM_Top(PWMSND_SLICE, EMU_PWMTOP);
+        PWM_Comp(PWMSND_SLICE, PWMSND_CHAN, EMU_PWMTOP/2);
 #if PWMSND_GPIO_R >= 0
-	PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, EMU_PWMTOP/2); // write default PWM sample
+        PWM_Comp(PWMSND_SLICE_R, PWMSND_CHAN_R, EMU_PWMTOP/2);
 #endif // PWMSND_GPIO_R
-	PWM_Enable(PWMSND_SLICE);		// enable PWM
-	PWM_IntEnable(PWMSND_SLICE);		// PWM interrupt enable
+        PWM_Enable(PWMSND_SLICE);
 
+        audio_dma_ctrl = DMA_CTRL_QUIET |
+                DMA_CTRL_TREQ(DREQ_PWM_WRAP0 + PWMSND_SLICE) |
+                DMA_CTRL_INC_READ |
+                DMA_CTRL_SIZE(DMA_SIZE_32) |
+                DMA_CTRL_EN;
+
+        audio_fill_block(0);
+        audio_fill_block(1);
+        DMA_Config(AUDIO_DMA_CH, &audio_ring[0], PWM_CC(PWMSND_SLICE), AUDIO_BLOCK_SAMPLES, audio_dma_ctrl);
+        dma_block = 0;
+
+        DMA_IRQ0Enable(AUDIO_DMA_CH);
+        SetHandler(IRQ_DMA_0, PWMSndIrq);
+        NVIC_IRQEnable(IRQ_DMA_0);
+        DMA_Start(AUDIO_DMA_CH);
 	// Start Core1, which processes requests to the LCD
 	GB_InitCore1();
 

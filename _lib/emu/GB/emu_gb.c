@@ -437,9 +437,10 @@ u32 GB_Start(sFile* file, int size, char* name, int pwm, u32 freq)
 	memset(GBC->xram, 0, sizeof(GBC->xram));
 	memset(GBC->wram, 0, sizeof(GBC->wram));
 	memset(GBC->hram, 0, sizeof(GBC->hram));
-	memset(GBC->rom, GB_ROM_PAGEINV, sizeof(GBC->rom));
-	memset(GBC->cache, 0xff, sizeof(GBC->cache));
-	memset(GBC->cache_list, 0xff, sizeof(GBC->cache_list));
+        memset(GBC->rom, GB_ROM_PAGEINV, sizeof(GBC->rom));
+        memset(GBC->cache, 0xff, sizeof(GBC->cache));
+        memset(GBC->cache_list, 0xff, sizeof(GBC->cache_list));
+        GB_RomLutInit();
 
 	// GBC palettes
 #if USE_EMU_GB == 2			// 1=use Game Boy emulator, 2=use Game Boy Color emulator

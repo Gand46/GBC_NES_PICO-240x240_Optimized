@@ -301,3 +301,6 @@ u8 FASTCODE NOFLASH(GB_GetMem)(u16 addr);
 
 // write memory (callback from emulator)
 void FASTCODE NOFLASH(GB_SetMem)(u16 addr, u8 data);
+
+// initialize ROM cache lookup table
+void GB_RomLutInit(void);

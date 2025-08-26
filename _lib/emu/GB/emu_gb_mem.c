@@ -17,17 +17,71 @@
 // >>> Keep tables and functions in RAM (without "const") for faster access.
 extern volatile Bool GB_ScreenDirty;
 
+// -----------------------------------------------------------------------------
+//              ROM cache lookup table (hash map of offset -> page)
+// -----------------------------------------------------------------------------
+
+// Size of lookup table must be power of 2 and > GB_CACHE_PAGENUM to reduce
+// collisions. 32 entries cost only 128 B of RAM and keep operations O(1).
+#define GB_ROM_LOOKUP_SIZE       32
+
+static u32      gb_rom_lut_off[GB_ROM_LOOKUP_SIZE]; // keys: ROM offsets
+static u8       gb_rom_lut_pg[GB_ROM_LOOKUP_SIZE];  // values: cache page index
+
+// Initialize lookup table
+void GB_RomLutInit(void)
+{
+    for (int i = 0; i < GB_ROM_LOOKUP_SIZE; i++)
+    {
+        gb_rom_lut_off[i] = GB_CACHE_INV;
+        gb_rom_lut_pg[i]  = GB_ROM_PAGEINV;
+    }
+}
+
+// Insert or update record in lookup table
+static inline void GB_RomLutSet(u32 off, u8 pg)
+{
+    u32 i = (off >> GB_PAGE_SHIFT) & (GB_ROM_LOOKUP_SIZE-1);
+    while (gb_rom_lut_off[i] != GB_CACHE_INV && gb_rom_lut_off[i] != off)
+        i = (i + 1) & (GB_ROM_LOOKUP_SIZE-1);
+    gb_rom_lut_off[i] = off;
+    gb_rom_lut_pg[i]  = pg;
+}
+
+// Remove record from lookup table
+static inline void GB_RomLutRemove(u32 off)
+{
+    u32 i = (off >> GB_PAGE_SHIFT) & (GB_ROM_LOOKUP_SIZE-1);
+    while (gb_rom_lut_off[i] != GB_CACHE_INV)
+    {
+        if (gb_rom_lut_off[i] == off)
+        {
+            gb_rom_lut_off[i] = GB_CACHE_INV;
+            gb_rom_lut_pg[i]  = GB_ROM_PAGEINV;
+            return;
+        }
+        i = (i + 1) & (GB_ROM_LOOKUP_SIZE-1);
+    }
+}
+
 // search ROM cache page by offset (returns GB_ROM_PAGEINV = not found)
 u8 GB_GetROMbyOff(u32 off)
 {
-	int i = GB_CACHE_PAGENUM-1;
-	sGB_Cache* c = &GBC->cache_list[i];
-	for (; i >= 0; i--)
-	{
-		if (c->off == off) return (u8)i;
-		c--;
-	}
-	return GB_ROM_PAGEINV;
+    u32 i = (off >> GB_PAGE_SHIFT) & (GB_ROM_LOOKUP_SIZE-1);
+    while (gb_rom_lut_off[i] != GB_CACHE_INV)
+    {
+        if (gb_rom_lut_off[i] == off) return gb_rom_lut_pg[i];
+        i = (i + 1) & (GB_ROM_LOOKUP_SIZE-1);
+    }
+    return GB_ROM_PAGEINV;
+}
+
+// find free cache page (returns GB_ROM_PAGEINV if none free)
+static inline u8 GB_GetFreeRomPage(void)
+{
+    for (int i = GB_CACHE_PAGENUM-1; i >= 0; i--)
+        if (GBC->cache_list[i].off == GB_CACHE_INV) return (u8)i;
+    return GB_ROM_PAGEINV;
 }
 
 // read memory
@@ -52,40 +106,42 @@ u8 FASTCODE NOFLASH(GB_GetMem)(u16 addr)
 			// search ROM by offset
 			rom = GB_GetROMbyOff(off);
 
-			// page not found, need to read from the ROM file
-			if (rom == GB_ROM_PAGEINV)
-			{
-				// prepare free page
-				rom = GB_GetROMbyOff(GB_CACHE_INV);
+                        // page not found, need to read from the ROM file
+                        if (rom == GB_ROM_PAGEINV)
+                        {
+                                // prepare free page
+                                rom = GB_GetFreeRomPage();
 
-				// no free page - free the oldest one
-				if (rom == GB_ROM_PAGEINV)
-				{
-					// all pages are used, find the oldest one
-					u32 t = Time();
-					u32 delta;
-					u32 deltabest = 0;
-					int i = GB_CACHE_PAGENUM-1;
-					rom = (u8)i;
-					sGB_Cache* c = &GBC->cache_list[i];
-					for (; i >= 0; i--)
-					{
-						delta = t - c->last;
-						if (delta > deltabest)
-						{
-							rom = (u8)i;
-							deltabest = delta;
-						}
-						c--;
-					}
+                                // no free page - free the oldest one
+                                if (rom == GB_ROM_PAGEINV)
+                                {
+                                        // all pages are used, find the oldest one
+                                        u32 t = Time();
+                                        u32 delta;
+                                        u32 deltabest = 0;
+                                        int i = GB_CACHE_PAGENUM-1;
+                                        rom = (u8)i;
+                                        sGB_Cache* c = &GBC->cache_list[i];
+                                        for (; i >= 0; i--)
+                                        {
+                                                delta = t - c->last;
+                                                if (delta > deltabest)
+                                                {
+                                                        rom = (u8)i;
+                                                        deltabest = delta;
+                                                }
+                                                c--;
+                                        }
 
-					// mark this page as not used
-					GBC->cache_list[rom].off = GB_CACHE_INV;
-					for (i = GB_ROM_PAGENUM-1; i >= 0; i--)
-					{
-						if (GBC->rom[i] == rom) GBC->rom[i] = GB_ROM_PAGEINV;
-					}
-				}
+                                        // mark this page as not used
+                                        u32 oldoff = GBC->cache_list[rom].off;
+                                        GBC->cache_list[rom].off = GB_CACHE_INV;
+                                        GB_RomLutRemove(oldoff);
+                                        for (i = GB_ROM_PAGENUM-1; i >= 0; i--)
+                                        {
+                                                if (GBC->rom[i] == rom) GBC->rom[i] = GB_ROM_PAGEINV;
+                                        }
+                                }
 
 				// bytes to read
 				int len = GB_ROMSize - off;
@@ -122,8 +178,9 @@ u8 FASTCODE NOFLASH(GB_GetMem)(u16 addr)
 				// clear rest of data
 				if (len < GB_PAGE_SIZE) memset(&GBC->cache[rom*GB_PAGE_SIZE + len], 0xff, GB_PAGE_SIZE - len);
 
-				// mark this offset
-				GBC->cache_list[rom].off = off;
+                                // mark this offset
+                                GBC->cache_list[rom].off = off;
+                                GB_RomLutSet(off, rom);
 			}
 
 			// access to this page

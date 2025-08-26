@@ -87,6 +87,9 @@ void GB_KeyFlush();
 // get key KEY_X, KEY_Y, KEY_A or KEY_B (return NOKEY if no key)
 u8 GB_KeyGet();
 
+// set frame skip mask (0 = render every frame)
+void GB_SetFrameSkip(u8 mask);
+
 #define ROM_CRC_ADDR	0x014D
 
 #define GB_EMU_VER	0x100	// emulator version, major and minor byte
@@ -135,7 +138,8 @@ typedef struct {
 // aligned
 	u8		wram_sel;		// selected working WRAM bank 4 KB (1..7)
 	u8		frame;			// display frame counter, to skip some frames
-	u16		res2;			// ... reserved (set to 0)
+        u8              frame_skip;             // frame skip mask (0=render every frame)
+        u8              res2;                   // ... reserved (set to 0)
 // aligned
 	u16		mbc_rom_num;		// number of ROM banks 16 KB (2..512)
 	u16		rom_sel;		// selected ROM bank 16 KB (1..511)

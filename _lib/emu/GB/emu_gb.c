@@ -103,11 +103,17 @@ u8 GB_KeyGet()
 		return KEY_A;
 	}
 
-	if (GB_KeyB)
-	{
-		GB_KeyB = False;
-		return KEY_B;
-	}
+    if (GB_KeyB)
+    {
+        GB_KeyB = False;
+        return KEY_B;
+    }
+}
+
+// set frame skip mask (0 = render every frame)
+void GB_SetFrameSkip(u8 mask)
+{
+        GBC->frame_skip = mask;
 }
 
 // key handler (called from systick alarm every 50 ms)
@@ -426,7 +432,8 @@ u32 GB_Start(sFile* file, int size, char* name, int pwm, u32 freq)
 	GBC->vram_sel = 0;	// selected video VRAM bank 8 KB (0 or 1)
 	GBC->wram_sel = 1;	// selected working WRAM bank 4 KB (1..7)
 	GBC->frame = 0;		// display frame counter
-	GBC->dmanotrun = 1;	// DMA not running
+        GBC->frame_skip = 3;    // frame skip mask (0=render every frame)
+        GBC->dmanotrun = 1;     // DMA not running
 	GBC->dmamode = 0;	// DMA mode
 	GBC->dmasize = 0;	// DMA size
 	GBC->dmasrc = 0;	// DMA source
@@ -437,9 +444,10 @@ u32 GB_Start(sFile* file, int size, char* name, int pwm, u32 freq)
 	memset(GBC->xram, 0, sizeof(GBC->xram));
 	memset(GBC->wram, 0, sizeof(GBC->wram));
 	memset(GBC->hram, 0, sizeof(GBC->hram));
-	memset(GBC->rom, GB_ROM_PAGEINV, sizeof(GBC->rom));
-	memset(GBC->cache, 0xff, sizeof(GBC->cache));
-	memset(GBC->cache_list, 0xff, sizeof(GBC->cache_list));
+        memset(GBC->rom, GB_ROM_PAGEINV, sizeof(GBC->rom));
+        memset(GBC->cache, 0xff, sizeof(GBC->cache));
+        memset(GBC->cache_list, 0xff, sizeof(GBC->cache_list));
+        GB_RomLutInit();
 
 	// GBC palettes
 #if USE_EMU_GB == 2			// 1=use Game Boy emulator, 2=use Game Boy Color emulator

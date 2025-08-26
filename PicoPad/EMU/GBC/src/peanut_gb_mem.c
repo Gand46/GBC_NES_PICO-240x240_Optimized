@@ -33,44 +33,35 @@
 
 #include "../include.h"
 
+static const u8 read_map[16] = {
+        0,0,0,0, 1,1,1,1, 2,2, 3,3, 4,4, 5,6
+};
+
 // Internal function used to read bytes.
 u8 FASTCODE NOFLASH(__gb_read)(struct gb_s *gb, u16 addr)
 {
-	switch(PEANUT_GB_GET_MSN16(addr))
-	{
-	case 0x0:
-		// IO_BANK is only set to 1 if gb->gb_bootrom_read was not NULL on reset.
-		if(gb->hram_io[IO_BANK] == 0 && addr < 0x0100)
-		{
-			return gb->gb_bootrom_read(gb, addr);
-		}
+        switch(read_map[addr >> 12])
+        {
+        case 0:
+                if(gb->hram_io[IO_BANK] == 0 && addr < 0x0100)
+                        return gb->gb_bootrom_read(gb, addr);
+                return gb->gb_rom_read(gb, addr);
 
-		// Fallthrough
-	case 0x1:
-	case 0x2:
-	case 0x3:
-		return gb->gb_rom_read(gb, addr);
+        case 1:
+                if(gb->mbc == MBC1 && gb->cart_mode_select)
+                        return gb->gb_rom_read(gb, addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE);
+                else
+                        return gb->gb_rom_read(gb, addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE);
 
-	case 0x4:
-	case 0x5:
-	case 0x6:
-	case 0x7:
-		if(gb->mbc == MBC1 && gb->cart_mode_select)
-			return gb->gb_rom_read(gb, addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE);
-		else
-			return gb->gb_rom_read(gb, addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE);
+        case 2:
+                return gb->vram[addr - gb->cgb.vramBankOffset];
 
-	case 0x8:
-	case 0x9:
-		return gb->vram[addr - gb->cgb.vramBankOffset];
-
-	case 0xA:
-	case 0xB:
-		if(gb->mbc == MBC3 && gb->cart_ram_bank >= 0x08)
-		{
-			return gb->cart_rtc[gb->cart_ram_bank - 0x08];
-		}
-		else if(gb->cart_ram && gb->enable_cart_ram)
+        case 3:
+                if(gb->mbc == MBC3 && gb->cart_ram_bank >= 0x08)
+                {
+                        return gb->cart_rtc[gb->cart_ram_bank - 0x08];
+                }
+                else if(gb->cart_ram && gb->enable_cart_ram)
 		{
 			if(gb->mbc == MBC2)
 			{
@@ -88,21 +79,20 @@ u8 FASTCODE NOFLASH(__gb_read)(struct gb_s *gb, u16 addr)
 				return gb->gb_cart_ram_read(gb, addr - CART_RAM_ADDR);
 		}
 
-		return 0xFF;
+                return 0xFF;
 
-	case 0xC:
-	case 0xD:
-	if(gb->cgb.cgbMode && addr >= WRAM_1_ADDR)
-		return gb->wram[addr - gb->cgb.wramBankOffset];
-	else
-		return gb->wram[addr - WRAM_0_ADDR];
+        case 4:
+                if(gb->cgb.cgbMode && addr >= WRAM_1_ADDR)
+                        return gb->wram[addr - gb->cgb.wramBankOffset];
+                else
+                        return gb->wram[addr - WRAM_0_ADDR];
 
-	case 0xE:
-		return gb->wram[addr - ECHO_ADDR];
+        case 5:
+                return gb->wram[addr - ECHO_ADDR];
 
-	case 0xF:
-		if(addr < OAM_ADDR)
-			return gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset];
+        case 6:
+                if(addr < OAM_ADDR)
+                        return gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset];
 
 		if(addr < UNUSED_ADDR)
 			return gb->oam[addr - OAM_ADDR];
@@ -159,108 +149,102 @@ u8 FASTCODE NOFLASH(__gb_read)(struct gb_s *gb, u16 addr)
 			// HRAM 
 			if(addr >= IO_ADDR)
 				return gb->hram_io[addr - IO_ADDR];
-		}
-	}
+                }
+        }
 
-	// invalid address
-	return 0xff;
+        // invalid address
+        return 0xff;
 }
+
+static const u8 write_map[16] = {
+        0,0,0,0, 1,1, 2,2, 3,3, 4,4, 5,6,7,8
+};
 
 // Internal function used to write bytes.
 void FASTCODE NOFLASH(__gb_write)(struct gb_s *gb, uint_fast16_t addr, u8 val)
 {
-	switch(PEANUT_GB_GET_MSN16(addr))
-	{
-	case 0x0:
-	case 0x1:
-		// Set RAM enable bit. MBC2 is handled in fall-through.
-		if(gb->mbc > MBC0 && gb->mbc != MBC2 && gb->cart_ram)
-		{
-			gb->enable_cart_ram = ((val & 0x0F) == 0x0A);
-			return;
-		}
+        switch(write_map[addr >> 12])
+        {
+        case 0:
+                if(addr < 0x2000)
+                {
+                        if(gb->mbc > MBC0 && gb->mbc != MBC2 && gb->cart_ram)
+                        {
+                                gb->enable_cart_ram = ((val & 0x0F) == 0x0A);
+                                return;
+                        }
+                }
+                else if(addr < 0x3000)
+                {
+                        if(gb->mbc == MBC5)
+                        {
+                                gb->selected_rom_bank = (gb->selected_rom_bank & 0x100) | val;
+                                gb->selected_rom_bank = gb->selected_rom_bank & gb->num_rom_banks_mask;
+                                return;
+                        }
+                }
 
-	// Intentional fall through.
-	case 0x2:
-		if(gb->mbc == MBC5)
-		{
-			gb->selected_rom_bank = (gb->selected_rom_bank & 0x100) | val;
-			gb->selected_rom_bank =
-				gb->selected_rom_bank & gb->num_rom_banks_mask;
-			return;
-		}
+                if(gb->mbc == MBC1)
+                {
+                        gb->selected_rom_bank = (val & 0x1F) | (gb->selected_rom_bank & 0x60);
 
-	// Intentional fall through.
-	case 0x3:
-		if(gb->mbc == MBC1)
-		{
-			//selected_rom_bank = val & 0x7;
-			gb->selected_rom_bank = (val & 0x1F) | (gb->selected_rom_bank & 0x60);
+                        if((gb->selected_rom_bank & 0x1F) == 0x00)
+                                gb->selected_rom_bank++;
+                }
+                else if(gb->mbc == MBC2)
+                {
+                        if(addr & 0x100)
+                        {
+                                gb->selected_rom_bank = val & 0x0F;
+                                if(!gb->selected_rom_bank)
+                                        gb->selected_rom_bank++;
+                        }
+                        else
+                        {
+                                gb->enable_cart_ram = ((val & 0x0F) == 0x0A);
+                                return;
+                        }
+                }
+                else if(gb->mbc == MBC3)
+                {
+                        gb->selected_rom_bank = val & 0x7F;
 
-			if((gb->selected_rom_bank & 0x1F) == 0x00)
-				gb->selected_rom_bank++;
-		}
-		else if(gb->mbc == MBC2)
-		{
-			// If bit 8 is 1, then set ROM bank number.
-			if(addr & 0x100)
-			{
-				gb->selected_rom_bank = val & 0x0F;
-				// Setting ROM bank to 0, sets it to 1.
-				if(!gb->selected_rom_bank)
-					gb->selected_rom_bank++;
-			}
-			// Otherwise set whether RAM is enabled or not.
-			else
-			{
-				gb->enable_cart_ram = ((val & 0x0F) == 0x0A);
-				return;
-			}
-		}
-		else if(gb->mbc == MBC3)
-		{
-			gb->selected_rom_bank = val & 0x7F;
+                        if(!gb->selected_rom_bank)
+                                gb->selected_rom_bank++;
+                }
+                else if(gb->mbc == MBC5)
+                        gb->selected_rom_bank = (val & 0x01) << 8 | (gb->selected_rom_bank & 0xFF);
 
-			if(!gb->selected_rom_bank)
-				gb->selected_rom_bank++;
-		}
-		else if(gb->mbc == MBC5)
-			gb->selected_rom_bank = (val & 0x01) << 8 | (gb->selected_rom_bank & 0xFF);
+                gb->selected_rom_bank = gb->selected_rom_bank & gb->num_rom_banks_mask;
+                return;
 
-		gb->selected_rom_bank = gb->selected_rom_bank & gb->num_rom_banks_mask;
-		return;
+        case 1:
+                if(gb->mbc == MBC1)
+                {
+                        gb->cart_ram_bank = (val & 3);
+                        gb->selected_rom_bank = ((val & 3) << 5) | (gb->selected_rom_bank & 0x1F);
+                        gb->selected_rom_bank = gb->selected_rom_bank & gb->num_rom_banks_mask;
+                }
+                else if(gb->mbc == MBC3)
+                        gb->cart_ram_bank = val;
+                else if(gb->mbc == MBC5)
+                        gb->cart_ram_bank = (val & 0x0F);
 
-	case 0x4:
-	case 0x5:
-		if(gb->mbc == MBC1)
-		{
-			gb->cart_ram_bank = (val & 3);
-			gb->selected_rom_bank = ((val & 3) << 5) | (gb->selected_rom_bank & 0x1F);
-			gb->selected_rom_bank = gb->selected_rom_bank & gb->num_rom_banks_mask;
-		}
-		else if(gb->mbc == MBC3)
-			gb->cart_ram_bank = val;
-		else if(gb->mbc == MBC5)
-			gb->cart_ram_bank = (val & 0x0F);
+                return;
 
-		return;
+        case 2:
+                gb->cart_mode_select = (val & 1);
+                return;
 
-	case 0x6:
-	case 0x7:
-		gb->cart_mode_select = (val & 1);
-		return;
+        case 3:
+                gb->vram[addr - gb->cgb.vramBankOffset] = val;
+                return;
 
-	case 0x8:
-	case 0x9:
-		gb->vram[addr - gb->cgb.vramBankOffset] = val;
-		return;
-
-	case 0xA:
-	case 0xB:
-		if(gb->mbc == MBC3 && gb->cart_ram_bank >= 0x08)
-		{
-			gb->cart_rtc[gb->cart_ram_bank - 0x08] = val;
-		}
+        case 4:
+                if(gb->mbc == MBC3 && gb->cart_ram_bank >= 0x08)
+                {
+                        gb->cart_rtc[gb->cart_ram_bank - 0x08] = val;
+                }
 		// Do not write to RAM if unavailable or disabled.
 		else if(gb->cart_ram && gb->enable_cart_ram)
 		{
@@ -280,28 +264,28 @@ void FASTCODE NOFLASH(__gb_write)(struct gb_s *gb, uint_fast16_t addr, u8 val)
 			}
 			else if(gb->num_ram_banks)
 				gb->gb_cart_ram_write(gb, addr - CART_RAM_ADDR, val);
-		}
+                }
 
-		return;
+                return;
 
-	case 0xC:
-		gb->wram[addr - WRAM_0_ADDR] = val;
-		return;
+        case 5:
+                gb->wram[addr - WRAM_0_ADDR] = val;
+                return;
 
-	case 0xD:
-		gb->wram[addr - gb->cgb.wramBankOffset] = val;
-		return;
+        case 6:
+                gb->wram[addr - gb->cgb.wramBankOffset] = val;
+                return;
 
-	case 0xE:
-		gb->wram[addr - ECHO_ADDR] = val;
-		return;
+        case 7:
+                gb->wram[addr - ECHO_ADDR] = val;
+                return;
 
-	case 0xF:
-		if(addr < OAM_ADDR)
-		{
-			gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset] = val;
-			return;
-		}
+        case 8:
+                if(addr < OAM_ADDR)
+                {
+                        gb->wram[(addr - 0x2000) - gb->cgb.wramBankOffset] = val;
+                        return;
+                }
 
 		if(addr < UNUSED_ADDR)
 		{

@@ -35,18 +35,22 @@
 #include <string.h>
 
 #if PEANUT_GB_HIGH_LCD_ACCURACY
-// compare sprites for quick-sort
-static int FASTCODE NOFLASH(compare_sprites)(const void *in1, const void *in2)
+// Stable insertion sort for small sprite counts (≤40)
+static void FASTCODE NOFLASH(sort_sprites)(struct sprite_data *sprites, u8 count)
 {
-	const struct sprite_data *sd1, *sd2;
-	int x_res;
+        for(u8 i = 1; i < count; i++)
+        {
+                struct sprite_data key = sprites[i];
+                int j = i - 1;
 
-	sd1 = (struct sprite_data *)in1;
-	sd2 = (struct sprite_data *)in2;
-	x_res = (int)sd1->x - (int)sd2->x;
-	if(x_res != 0) return x_res;
+                while(j >= 0 && sprites[j].x > key.x)
+                {
+                        sprites[j + 1] = sprites[j];
+                        j--;
+                }
 
-	return (int)sd1->sprite_number - (int)sd2->sprite_number;
+                sprites[j + 1] = key;
+        }
 }
 #endif
 
@@ -377,13 +381,12 @@ void FASTCODE NOFLASH(__gb_draw_line)(struct gb_s *gb)
 			number_of_sprites++;
 		}
 
-		if(!cgbmode)
-		{
-			// If maximum number of sprites reached, prioritise X
-			// coordinate and object location in OAM.
-			qsort(&sprites_to_render[0], number_of_sprites,
-					sizeof(sprites_to_render[0]), compare_sprites);
-		}
+                if(!cgbmode)
+                {
+                        // If maximum number of sprites reached, prioritise X
+                        // coordinate and object location in OAM.
+                        sort_sprites(&sprites_to_render[0], number_of_sprites);
+                }
 
 		if(number_of_sprites > MAX_SPRITES_LINE)
 			number_of_sprites = MAX_SPRITES_LINE;

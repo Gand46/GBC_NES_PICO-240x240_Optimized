@@ -267,7 +267,7 @@ void FASTCODE NOFLASH(GB_RenderLine)()
 	// prepare line buffer
 	int line = GBC->hram[GB_IO_LY];
 	if (line >= GB_HEIGHT) return; // invalid line
-	if ((GBC->frame & 3) != 0) return; // skip some frames to speed up rendering
+        if ((GBC->frame & GBC->frame_skip) != 0) return; // skip some frames to speed up rendering
 
 	u8 pixels[GB_WIDTH];		// pixel buffer
 #if USE_EMU_GB == 2			// 1=use Game Boy emulator, 2=use Game Boy Color emulator

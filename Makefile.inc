@@ -297,7 +297,7 @@ CFLAGS = $(ARCHCFG)
 # Enable link-time optimization for applications, but keep boot loader builds
 # minimal to preserve expected binary layout checked by LoaderBin.
 ifeq ($(TARGET),LOADER)
-CFLAGS += -O2
+CFLAGS += -Os   # optimize for size to fit within LoaderBin limits
 else
 CFLAGS += -O2 -flto   # optimize for speed with link-time optimization
 LDFLAGS += -flto

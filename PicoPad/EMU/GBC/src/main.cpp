@@ -10,8 +10,8 @@
 #define EMU_PWMTOP	4095	// PWM sound top (period = EMU_PWMTOP + 1 = 4096)
 #define EMU_PWMCLOCK	(AUDIO_SAMPLE_RATE*(EMU_PWMTOP+1)) // PWM clock (= 32768*4096 = 134 217 728)
 
-#define DISP_MINFPS	8	// minimal required display FPS (limit rendering to speed-up program emulation)
-#define DISP_MAXFPS	22	// maximal required display FPS (limit rendering to speed-up program emulation)
+#define DISP_MINFPS	15	// minimal required display FPS (limit rendering to speed-up program emulation)
+#define DISP_MAXFPS	30	// maximal required display FPS (limit rendering to speed-up program emulation)
 #define DISP_MINDELAYUS	(1000000/(DISP_MAXFPS*HEIGHT)) // minimal delay per scanline in [us]
 #define DISP_MAXDELAYUS	(1000000/(DISP_MINFPS*HEIGHT)) // maximal delay per scanline in [us]
 #define DISP_INCDELAY	3	// speed of delay adaptation

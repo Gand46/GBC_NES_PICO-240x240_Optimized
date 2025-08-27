@@ -31,7 +31,7 @@ if not exist samples\%1.PNG copy NES.PNG samples\%1.PNG > nul
 if not exist samples\%1.TXT copy NES.TXT samples\%1.TXT > nul
 
 rem find /C "MBC=" samples\%1.TXT > nul
-find /C "CRC=" samples\%1.TXT > nul
+rem find /C "CRC=" samples\%1.TXT > nul
 if not errorlevel 1 goto stop
 NESprep\MapperNo\MapperNo samples\%1.nes >> samples\%1.TXT
 if not errorlevel 1 goto stop

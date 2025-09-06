@@ -149,5 +149,12 @@
 #define FONTH		16		// height of system font
 
 #include "../../../config_def.h"	// default configuration
+#if (DISP_ROT == 0) || (DISP_ROT == 2)
+#define DISP_OFFSET_X 0
+#define DISP_OFFSET_Y 80
+#else
+#define DISP_OFFSET_X 80
+#define DISP_OFFSET_Y 0
+#endif
 
 #endif // _CONFIG_H

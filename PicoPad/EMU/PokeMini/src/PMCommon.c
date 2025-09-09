@@ -20,8 +20,10 @@
 #include "PokeMini.h"
 #include <ctype.h>
 
-#include <string/stdstring.h>
-#include <file/file_path.h>
+#include <string.h>
+
+static inline int string_is_empty(const char* s) { return !s || *s == '\0'; }
+static inline int path_is_valid(const char* path) { return path && *path; }
 
 /* Return true if the string is valid and non-empty */
 int StringIsSet(char *str)

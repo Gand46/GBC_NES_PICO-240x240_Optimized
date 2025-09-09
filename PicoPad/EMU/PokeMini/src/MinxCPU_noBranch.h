@@ -22,6 +22,9 @@
 #include <stdint.h>
 #include <retro_inline.h>
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wregister"
+#endif
 /* For some reason, '_BIG_ENDIAN' is always defined when
  * building for 3DS/Switch with devkitarm/a64... */
 #if defined (_BIG_ENDIAN) && !defined (_3DS) && !defined(HAVE_LIBNX)

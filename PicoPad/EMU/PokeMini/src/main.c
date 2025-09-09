@@ -1,47 +1,45 @@
-#include "main.h"
-#include "PokeMini.h"
-#include "Hardware.h"
-#include <stdio.h>
+#include "../include.h"
+#include <stdlib.h>
 
-#define SAMPLE_ROM_PATH "samples/sample.min"
-
-static int load_rom(const char *path)
-{
-    FILE *f = fopen(path, "rb");
-    if (!f)
-        return 0;
-
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    if (!PokeMini_NewMIN(size)) {
-        fclose(f);
-        return 0;
-    }
-
-    if (fread(PM_ROM, 1, size, f) != (size_t)size) {
-        fclose(f);
-        return 0;
-    }
-
-    fclose(f);
-    return 1;
-}
-
-// Basic entry point wiring the PokeMini core
 int main(void)
 {
-    if (!PokeMini_Create(0, 0))
-        return 1;
+    DrawClear();
+    DrawPrintText("PokeMini stub\n");
 
-    if (!load_rom(SAMPLE_ROM_PATH))
-        return 1;
+    if (!DiskMount())
+    {
+        DrawPrintText("No SD\n");
+        while (1) { }
+    }
 
-    PokeMini_Reset(1);
+    if (!SetDir("samples"))
+    {
+        DrawPrintText("No samples dir\n");
+        while (1) { }
+    }
 
-    while (1)
-        PokeMini_EmulateFrame();
+    sFile rom;
+    if (FileOpen(&rom, "sample.min"))
+    {
+        int size = FileSize(&rom);
+        u8 *buf = (u8*)malloc(size);
+        if (buf)
+        {
+            FileRead(&rom, buf, size);
+            DrawPrintText("ROM loaded\n");
+            free(buf);
+        }
+        else
+        {
+            DrawPrintText("No mem\n");
+        }
+        FileClose(&rom);
+    }
+    else
+    {
+        DrawPrintText("sample.min missing\n");
+    }
 
+    while (1) { }
     return 0;
 }

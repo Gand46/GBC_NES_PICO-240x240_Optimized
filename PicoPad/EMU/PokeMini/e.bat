@@ -1,5 +1,5 @@
 @echo off
 rem Export to hardware...
 
-set TARGET=POKEMINI
+set TARGET=PokeMini
 ..\..\..\_e1.bat

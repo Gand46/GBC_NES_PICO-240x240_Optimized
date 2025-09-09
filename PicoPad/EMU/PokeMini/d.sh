@@ -2,5 +2,5 @@
 
 # Delete...
 
-export TARGET="POKEMINI"
-bash ../../../_d1.sh
+export TARGET="PokeMini"
+../../../_d1.sh

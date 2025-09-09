@@ -1,8 +1,5 @@
-#ifndef _INCLUDE_H
-#define _INCLUDE_H
+#pragma once
 
+// Include PicoLibSDK headers
 #include INCLUDES_H
 
-#include "src/main.h"
-
-#endif

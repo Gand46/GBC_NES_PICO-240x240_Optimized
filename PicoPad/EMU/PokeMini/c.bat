@@ -1,4 +1,8 @@
 @echo off
 rem Compilation...
 
-call _c.bat %1
+set TARGET=PokeMini
+set GRPDIR=EMU
+set MEMMAP=
+
+..\..\..\_c1.bat %1

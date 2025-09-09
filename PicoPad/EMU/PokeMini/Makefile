@@ -1,9 +1,6 @@
+# PokeMini emulator stub
 
-# ASM source files
-ASRC +=
-
-# C source files
-SRC += $(wildcard src/*.c)
+SRC += src/main.c
 
 # Path to root directory from the project directory (without trailing '/' delimiter)
 PICO_ROOT_PATH = ../../..

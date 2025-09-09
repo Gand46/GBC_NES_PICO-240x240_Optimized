@@ -1,16 +1,20 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-// *********
-// Here you can override default options from config_def.h.
-// *********
+// Disable unused display outputs
+#define USE_DISPHSTXMINI 0
+#define USE_DISPHSTX 0
+#define DISPHSTX_USE_DVI 0
+#define DISPHSTX_USE_VGA 0
 
-// Configure built-in ST7789 LCD for 240x240 resolution
+// Built-in ST7789 LCD
 #define USE_ST7789 1
 #define WIDTH 240
 #define HEIGHT 240
 
-// Include library default configuration
+// Enable basic text output
+#define USE_DRAW_STDIO 1
+
 #include CONFIG_DEF_H
 
 #endif // _CONFIG_H

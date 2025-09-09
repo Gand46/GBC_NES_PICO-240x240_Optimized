@@ -1,5 +1,5 @@
 @echo off
 rem Delete...
 
-set TARGET=POKEMINI
+set TARGET=PokeMini
 ..\..\..\_d1.bat

@@ -15,6 +15,7 @@
 #define RETRO_CALLCONV
 #endif
 
+#ifndef RETRO_API
 #if defined(_WIN32) && !defined(LIBRETRO_STATIC)
 #if defined(LIBRETRO_CORE)
 #define RETRO_API __declspec(dllexport)
@@ -23,6 +24,7 @@
 #endif
 #else
 #define RETRO_API
+#endif
 #endif
 
 #endif /* LIBRETRO_COMMON_API_H */

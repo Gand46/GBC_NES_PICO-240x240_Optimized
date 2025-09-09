@@ -24,6 +24,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+#endif
+#ifndef EOF
+#define EOF (-1)
+#endif
+
 #include <streams/memory_stream.h>
 
 /* TODO/FIXME - static globals */

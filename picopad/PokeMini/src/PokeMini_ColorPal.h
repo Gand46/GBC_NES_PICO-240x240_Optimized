@@ -1,6 +1,6 @@
 /*
   PokeMini - Pokmon-Mini Emulator
-  Copyright (C) 2009-2015  JustBurn
+  Copyright (C) 2009-2012  JustBurn
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -16,31 +16,24 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "PMCommon.h"
-#include "PokeMini.h"
-#include <ctype.h>
+#ifndef POKEMINI_COLORPAL
+#define POKEMINI_COLORPAL
 
-/* Return true if the string is valid and non-empty */
-int StringIsSet(char *str)
-{
-        return (str && *str) ? 1 : 0;
-}
+#include <stdint.h>
 
-/* Get multiple of 2 (Mask) */
-int GetMultiple2Mask(int input)
-{
-	if (input) input--;
-	input |= (input >> 1);
-	input |= (input >> 2);
-	input |= (input >> 4);
-	input |= (input >> 8);
-	input |= (input >> 16);
-	return input;
-}
+// PokeMini Unofficial Color Palette (RGBX8888)
+extern const uint32_t PokeMini_ColorPalRGB32[];
 
-/* Check if file exists */
-int FileExist(const char *filename)
-{
-        (void)filename;
-        return 0;
-}
+// PokeMini Unofficial Color Palette (BGRX8888)
+extern const uint32_t PokeMini_ColorPalBGR32[];
+
+// PokeMini Unofficial Color Palette (RGB565)
+extern const uint16_t PokeMini_ColorPalRGB16[];
+
+// PokeMini Unofficial Color Palette (BGR565)
+extern const uint16_t PokeMini_ColorPalBGR16[];
+
+// PokeMini Unofficial Color Palette (RGB555)
+extern const uint16_t PokeMini_ColorPalRGB15[];
+
+#endif

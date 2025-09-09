@@ -29,9 +29,8 @@ CSRC += src/CommandLine.c \
         src/Video_x6.c \
         src/Video_x7.c \
         src/freebios.c \
+        src/PokeMini_ColorPal.c \
         src/memory_stream.c \
-        src/file_stream.c \
-        src/file_stream_transforms.c \
         src/main.c
 
 # Additional include paths

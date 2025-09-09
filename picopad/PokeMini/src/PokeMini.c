@@ -519,8 +519,8 @@ void PokeMini_Reset(int hardreset)
 	{
 		PokeMini_LoadFreeBIOS();
 		if (StringIsSet(CommandLine.bios_file))
-			if (FileExist(CommandLine.bios_file))
-				PokeMini_LoadBIOSFile(CommandLine.bios_file);
+                        if (PokeMini_FileExist(CommandLine.bios_file))
+                                PokeMini_LoadBIOSFile(CommandLine.bios_file);
 	}
 
 	// Synchronize with host time

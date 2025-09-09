@@ -1,8 +1,8 @@
-# CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_bat.c
-# CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_key.c
-# CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_led.c
-# CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_init.c
-# CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_ss.c
+CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_bat.c
+CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_key.c
+CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_led.c
+CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_init.c
+CSRC += ${PICOLIBSDK_DEVICES_DIR}/picopad/picopad_ss.c
 
 DEFINE += -D USE_PICOPAD=1
 

@@ -19,6 +19,7 @@
 #include "PMCommon.h"
 #include "PokeMini.h"
 #include <ctype.h>
+#include <lib_fat.h>
 
 /* Return true if the string is valid and non-empty */
 int StringIsSet(char *str)
@@ -29,18 +30,17 @@ int StringIsSet(char *str)
 /* Get multiple of 2 (Mask) */
 int GetMultiple2Mask(int input)
 {
-	if (input) input--;
-	input |= (input >> 1);
-	input |= (input >> 2);
-	input |= (input >> 4);
-	input |= (input >> 8);
-	input |= (input >> 16);
-	return input;
+        if (input) input--;
+        input |= (input >> 1);
+        input |= (input >> 2);
+        input |= (input >> 4);
+        input |= (input >> 8);
+        input |= (input >> 16);
+        return input;
 }
 
-/* Check if file exists */
-int FileExist(const char *filename)
+/* Check if file exists using platform library */
+int PokeMini_FileExist(const char *filename)
 {
-        (void)filename;
-        return 0;
+        return FileExist(filename) ? 1 : 0;
 }

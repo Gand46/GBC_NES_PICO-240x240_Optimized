@@ -1,6 +1,4 @@
-.section .text
-.syntax unified
-.thumb
+.section .bootloader, "a"
 .global loader_entry
 loader_entry:
-    bx lr
+    .space 32768

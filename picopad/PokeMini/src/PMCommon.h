@@ -39,9 +39,6 @@ int StringIsSet(char *str);
 // Get multiple of 2 (Mask)
 int GetMultiple2Mask(int input);
 
-// Check if file exist
-int FileExist(const char *filename);
-
 // Directories
 void PokeMini_InitDirs(char *argv0, char *exec);
 

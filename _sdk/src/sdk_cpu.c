@@ -18,6 +18,7 @@
 #include "../inc/sdk_cpu.h"
 #include "../inc/sdk_bootrom.h"
 #include "../../_lib/inc/lib_print.h"
+#include <stdio.h>
 
 // Work-around of compiler error
 void _close_r(void) {}

@@ -10,4 +10,6 @@
 #define FONTW 8
 #define FONTH 16
 
+#include CONFIG_DEF_H
+
 #endif

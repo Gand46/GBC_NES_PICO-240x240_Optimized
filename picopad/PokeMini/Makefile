@@ -36,11 +36,14 @@ CSRC += src/CommandLine.c \
 # Additional include paths
 IPATH += -Isrc
 
-# C++ source files
-SRC +=
-
 # Path to root directory from the project directory
 PICO_ROOT_PATH = ../..
+
+# Include PicoLibSDK library headers
+IPATH += -I${PICO_ROOT_PATH}/_lib/inc
+
+# C++ source files
+SRC +=
 
 # Makefile includes
 include ${PICO_ROOT_PATH}/Makefile.inc

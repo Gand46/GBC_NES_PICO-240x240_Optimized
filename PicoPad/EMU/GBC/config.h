@@ -111,6 +111,14 @@
 //#define USE_REAL8192		1		// 1 = use real8192 numbers
 //#define USE_REAL12288		1		// 1 = use real12288 numbers
 
-#include CONFIG_DEF_H				// default configuration
+#include CONFIG_DEF_H                           // default configuration
+
+#if (DISP_ROT == 0) || (DISP_ROT == 2)
+#define DISP_OFFSET_X 0
+#define DISP_OFFSET_Y 80
+#else
+#define DISP_OFFSET_X 80
+#define DISP_OFFSET_Y 0
+#endif
 
 #endif // _CONFIG_H

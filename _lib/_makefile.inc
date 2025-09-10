@@ -44,7 +44,12 @@ CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_tprint.c
 CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_tree.c
 CSRC += ${PICOLIBSDK_LIB_DIR}/src/lib_video.c
 
+# Only build the optional MP3 decoder when its sources are present.
+# Some projects (like the PokeMini port) do not ship the MP3 library,
+# and building would fail with a missing file error.
+ifneq ($(wildcard ${PICOLIBSDK_LIB_DIR}/mp3/lib_mp3.c),)
 CSRC += ${PICOLIBSDK_LIB_DIR}/mp3/lib_mp3.c
+endif
 
 CSRC += ${PICOLIBSDK_LIB_DIR}/emu/emu.c
 

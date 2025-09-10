@@ -19,7 +19,10 @@
 #include "PMCommon.h"
 #include "PokeMini.h"
 #include <ctype.h>
-#include <lib_fat.h>
+
+// Forward declaration from PicoLibSDK's FAT library; linked in from platform
+// library when filesystem support is enabled.
+extern int FileExist(const char *path);
 
 /* Return true if the string is valid and non-empty */
 int StringIsSet(char *str)

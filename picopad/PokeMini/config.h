@@ -10,6 +10,10 @@
 #define FONTW 8
 #define FONTH 16
 
+// Enable FAT filesystem support so platform library provides FileExist and
+// related file utilities used by the PokeMini core
+#define USE_FAT 1
+
 #include CONFIG_DEF_H
 
 #endif

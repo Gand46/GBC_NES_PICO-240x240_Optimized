@@ -1,0 +1,4 @@
+PokéMini emulator port for PicoPad.
+
+This is an experimental integration of the open source PokéMini emulator using PicoLibSDK.
+The implementation is incomplete and currently serves as a skeleton for further development.

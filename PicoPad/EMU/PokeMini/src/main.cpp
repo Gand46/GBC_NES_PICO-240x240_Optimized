@@ -2,9 +2,16 @@
 
 void EmulatorLoop(void)
 {
-    // Initialize emulator (placeholder)
+    // Create emulator instance and reset to a known state
+    PokeMini_Create(0, 0);
     PokeMini_Reset(1);
-    // TODO: integrate display, input and sound similar to GBC/NES ports
+
+    // Main execution loop
+    while (true)
+    {
+        // Emulate a small slice of cycles
+        PokeMini_EmulateCycles(1000);
+    }
 }
 
 int main()
@@ -12,4 +19,3 @@ int main()
     EmulatorLoop();
     return 0;
 }
-

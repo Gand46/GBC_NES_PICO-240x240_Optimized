@@ -1,0 +1,13 @@
+Game menu: presiona Y + Arriba
+
+A ... captura de pantalla
+
+
+Este directorio contiene el esqueleto del port de DOOM para PicoPad. Los
+scripts de compilaci\303\263n (_c.bat, c.sh, etc.) siguen el mismo patr\303\263n que
+los proyectos de GBC y NES para facilitar la integraci\303\263n con las
+utilidades globales del SDK.
+
+Los archivos fuente reales se a\303\261adir\303\241n durante la tarea 2. Mientras
+llega ese momento el proyecto solo muestra una pantalla de marcador de
+posici\303\263n y permite salir con las teclas Y o X (o ESC en teclado USB).

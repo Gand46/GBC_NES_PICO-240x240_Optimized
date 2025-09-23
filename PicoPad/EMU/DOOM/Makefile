@@ -44,6 +44,7 @@ SRC += ${DOOM_CHOCOLATE_DIR}/pd_render.cpp
 SRC += src/doom_audio.cpp
 SRC += src/doom_video.cpp
 SRC += src/doom_input.cpp
+SRC += src/doom_files.cpp
 SRC += src/doom_app.cpp
 SRC += src/main.cpp
 

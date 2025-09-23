@@ -2,6 +2,7 @@
 
 void DoomApp::Init()
 {
+        DoomInputInit();
         DrawPlaceholder();
 }
 
@@ -25,15 +26,14 @@ bool DoomApp::ShouldExit() const
 
 void DoomApp::PollInput()
 {
-        u8 key = KeyGet();
-        if ((key == KEY_Y) || (key == KEY_X))
+        if (DoomInputConsumeExitRequest())
         {
                 requestExit = true;
                 return;
         }
 
 #if USE_USB_HOST_HID
-        if (UsbKeyIsPressed(HID_KEY_ESCAPE) || UsbKeyIsPressed(HID_KEY_X))
+        if (UsbKeyIsPressed(HID_KEY_ESCAPE))
         {
                 requestExit = true;
                 return;

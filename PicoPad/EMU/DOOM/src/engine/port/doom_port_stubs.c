@@ -184,35 +184,6 @@ void I_WaitVBL(int count)
         }
 }
 
-// --- Input layer ------------------------------------------------------------
-
-float mouse_acceleration = 0.0f;
-int mouse_threshold = 0;
-
-void I_StartTic(void)
-{
-}
-
-void I_BindInputVariables(void)
-{
-}
-
-void I_ReadMouse(void)
-{
-}
-
-void I_StartTextInput(int x1, int y1, int x2, int y2)
-{
-        (void)x1;
-        (void)y1;
-        (void)x2;
-        (void)y2;
-}
-
-void I_StopTextInput(void)
-{
-}
-
 // --- Audio layer ------------------------------------------------------------
 
 static boolean pico_sound_init(boolean use_sfx_prefix)

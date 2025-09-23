@@ -145,6 +145,40 @@
 
 #include CONFIG_DEF_H                           // default configuration
 
+// --- rp2040-doom integration -------------------------------------------------
+
+// Core feature toggles expected by the portable Chocolate Doom fork.  These
+// values mirror the configuration used by the reference rp2040-doom project
+// but are expressed using PicoPad SDK switches where possible.
+#define PICO_DOOM               1
+#define PICO_DOOM_INFO          0
+
+#define DOOM_ONLY               1
+#define DOOM_SMALL              1
+#define DOOM_TINY               0
+#define DOOM_CONST              1
+
+#define USE_CONST_SFX           1
+#define USE_CONST_MUSIC         1
+
+#define NO_FILE_ACCESS          0
+#define NO_USE_ARGS             1
+#define NO_USE_NET              1
+#define NO_USE_MOUSE            1
+#define NO_USE_JOYSTICK         1
+#define NO_USE_DEH              1
+#define NO_USE_RELOAD           1
+#define NO_USE_ENDDOOM          1
+#define NO_USE_LOADING_DISK     1
+#define NO_USE_MUSIC_PACKS      1
+#define NO_USE_TIMIDITY         1
+#define NO_USE_GUS              1
+#define NO_USE_LIBSAMPLERATE    1
+#define NO_USE_BOUND_CONFIG     1
+#define NO_USE_SAVE_CONFIG      1
+
+#define USE_PICO_NET            0
+
 #if (DISP_ROT == 0) || (DISP_ROT == 2)
 #define DISP_OFFSET_X 0
 #define DISP_OFFSET_Y 80

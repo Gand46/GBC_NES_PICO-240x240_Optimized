@@ -184,133 +184,14 @@ void I_WaitVBL(int count)
         }
 }
 
-// --- Video layer ------------------------------------------------------------
+// --- Input layer ------------------------------------------------------------
 
-pixel_t *I_VideoBuffer = NULL;
-boolean screenvisible = true;
-boolean screensaver_mode = false;
-should_be_const constcharstar video_driver = "pico";
-int window_width = DOOM_INTERNAL_WIDTH;
-int window_height = DOOM_INTERNAL_HEIGHT;
-int fullscreen = 1;
-int aspect_ratio_correct = 0;
-int integer_scaling = 1;
-int vga_porch_flash = 0;
-int force_software_renderer = 1;
-should_be_const constcharstar window_position = "center";
-unsigned int joywait = 0;
-isb_int8_t usegamma = 0;
 float mouse_acceleration = 0.0f;
 int mouse_threshold = 0;
-static pixel_t software_framebuffer[DOOM_INTERNAL_WIDTH * DOOM_INTERNAL_HEIGHT];
-static uint16_t doom_palette[256];
-
-void I_GraphicsCheckCommandLine(void)
-{
-}
-
-void I_InitGraphics(void)
-{
-        I_VideoBuffer = software_framebuffer;
-        memset(I_VideoBuffer, 0, sizeof(software_framebuffer));
-}
-
-void I_ShutdownGraphics(void)
-{
-        I_VideoBuffer = NULL;
-}
-
-void I_SetPalette(should_be_const byte *palette)
-{
-        if (palette == NULL)
-        {
-                return;
-        }
-
-        for (int i = 0; i < 256; ++i)
-        {
-                uint8_t r = palette[i * 3 + 0];
-                uint8_t g = palette[i * 3 + 1];
-                uint8_t b = palette[i * 3 + 2];
-                doom_palette[i] = ((r & 0xF8u) << 8) | ((g & 0xFCu) << 3) | (b >> 3);
-        }
-}
-
-int I_GetPaletteIndex(int r, int g, int b)
-{
-        (void)r;
-        (void)g;
-        (void)b;
-        return 0;
-}
-
-void I_UpdateNoBlit(void)
-{
-}
-
-void I_FinishUpdate(void)
-{
-}
-
-void I_ReadScreen(pixel_t *scr)
-{
-        if (scr != NULL && I_VideoBuffer != NULL)
-        {
-                memcpy(scr, I_VideoBuffer, sizeof(software_framebuffer));
-        }
-}
-
-void I_BeginRead(void)
-{
-}
-
-void I_SetWindowTitle(const char *title)
-{
-        (void)title;
-}
-
-void I_CheckIsScreensaver(void)
-{
-        screensaver_mode = false;
-}
-
-void I_SetGrabMouseCallback(grabmouse_callback_t func)
-{
-        (void)func;
-}
-
-void I_DisplayFPSDots(boolean dots_on)
-{
-        (void)dots_on;
-}
-
-void I_BindVideoVariables(void)
-{
-}
-
-void I_InitWindowTitle(void)
-{
-}
-
-void I_InitWindowIcon(void)
-{
-}
-
-void I_StartFrame(void)
-{
-}
 
 void I_StartTic(void)
 {
 }
-
-void I_EnableLoadingDisk(int xoffs, int yoffs)
-{
-        (void)xoffs;
-        (void)yoffs;
-}
-
-// --- Input layer ------------------------------------------------------------
 
 void I_BindInputVariables(void)
 {

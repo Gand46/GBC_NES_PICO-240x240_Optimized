@@ -15,6 +15,8 @@ public:
 
 private:
         bool requestExit = false;
+        bool storageMounted = false;
+        bool wadAvailable = false;
 
         void PollInput();
         void DrawPlaceholder();
